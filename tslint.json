@@ -1,6 +1,14 @@
 {
   "extends": "tslint-config-airbnb",
   "rules": {
-    "strict-boolean-expressions": false
+    "strict-boolean-expressions": false,
+    "import-name": false,
+    "variable-name": [
+      true,
+      "ban-keywords",
+      "check-format",
+      "allow-leading-underscore",
+      "allow-pascal-case"
+   ]
   }
 }
