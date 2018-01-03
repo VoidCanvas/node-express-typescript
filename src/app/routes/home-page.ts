@@ -1,14 +1,19 @@
+import * as Controllers from '../controllers';
 import {
   Base,
 } from './index';
-import * as Controllers from '../controllers';
+
 
 export class HomePage extends Base {
   controller: Controllers.HomePage;
   constructor(path:string) {
     super(path, new Controllers.HomePage());
+    this.METHOD_MAPPING = [
+      {
+        path: '/',
+        controllerMethod: this.controller.simpleHome,
+      },
+    ];
   }
-  mapRouteWithControllerMethods(app: any) {
-    app.get(`${this.path}/`, this.controller.simpleHome);
-  }
+
 }

@@ -1,3 +1,4 @@
+import * as express from 'express';
 import {
   Base,
 } from './index';
@@ -8,7 +9,7 @@ import {
 import { Stats } from 'fs';
 
 export class HomePage implements Base {
-  async simpleHome(req: Express.Request, res: any) {
+  async simpleHome(req: Express.Request, res: express.Response) {
     const resStatus = new Status(true);
     const simpleResponse = new Response(resStatus);
     
