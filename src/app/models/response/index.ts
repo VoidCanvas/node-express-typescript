@@ -2,10 +2,11 @@ import { IResponse } from '../../interfaces/models';
 import { Base } from '../index';
 import{ Status } from './status';
 
-export class Response implements IResponse{
+export class Response extends Base implements IResponse {
   status: Status;
   result: Base;   
   constructor(status?:Status, result?: Base) {
+    super();
     if (status) {
       this.status = status;
     }

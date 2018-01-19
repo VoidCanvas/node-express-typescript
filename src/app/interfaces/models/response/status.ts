@@ -1,7 +1,7 @@
 import {
   IBase,
 } from '../index';
-export interface IStatus extends IBase{
+export interface IStatus{
   error: Error;
   isSuccessful: boolean;
 }

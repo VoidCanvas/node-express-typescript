@@ -1,19 +1,26 @@
-import { Application } from 'express';
-import { 
-  IBase,
-} from '../interfaces/routes';
+import { Application, Request, Response } from 'express';
+
+import * as Routes from '../interfaces/routes';
+import * as Models from '../interfaces/models';
 import * as Controllers from '../controllers';
  
-export class Base implements IBase{
+export class Base implements Routes.IBase{
   path: string;
   controller: Controllers.Base;
-  METHOD_MAPPING: {path: string, controllerMethod:any}[];
+  METHOD_MAPPING: {
+    path: string, 
+    controllerMethod: (req:Request, res:Response) => Promise<Models.IResponse>,
+  }[];
   mapRouteWithControllerMethods(
       app:Application,
     ): void {
     this.METHOD_MAPPING.forEach((map) => {
-      app.get(`${map.path}/`, map.controllerMethod);
-
+      app.get(`${this.path}${map.path}`, (req, res) => {
+        map.controllerMethod(req, res)
+        .then((response) => {
+          res.json(response);
+        });
+      });
     });
   }
 

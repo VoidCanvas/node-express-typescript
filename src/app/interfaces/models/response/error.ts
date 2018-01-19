@@ -2,7 +2,7 @@ import {
   IBase,
 } from '../index';
 
-export interface IError extends IBase {
+export interface IError {
   code: number;
   message: string;
   extra:any;

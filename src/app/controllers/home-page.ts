@@ -9,11 +9,12 @@ import {
 import { Stats } from 'fs';
 
 export class HomePage implements Base {
-  async simpleHome(req: Express.Request, res: express.Response) {
+  async simpleHome(req: Express.Request, res: express.Response): Promise<Response> {
+
     const resStatus = new Status(true);
     const simpleResponse = new Response(resStatus);
     
-    res.json(simpleResponse);
+    return simpleResponse;
   }
 
 }

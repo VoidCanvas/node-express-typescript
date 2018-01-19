@@ -2,7 +2,7 @@ import {
   IBase,
 } from '../index';
 import { IStatus } from './status';
-export interface IResponse extends IBase{
+export interface IResponse {
   status: IStatus;
   result: IBase;
 }

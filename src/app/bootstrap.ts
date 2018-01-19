@@ -10,7 +10,7 @@ import {
 // This const hold the router and path mapping. All your new routes should get the path from here
 const ACTIVE_ROUTES: {routerClass: any, path: string }[] = [
   {
-    path: '/',
+    path: '/home',
     routerClass: HomePage,
   },
 ];
@@ -20,6 +20,6 @@ export default function (app:Application) {
   // Activating routes
   ACTIVE_ROUTES.forEach((router) => {
     const route = new router.routerClass(`${BASE_ROUTE}${router.path}`);
-    route.mapRouteWithControllerMethods(app); // the 
+    route.mapRouteWithControllerMethods(app); 
   });
 }

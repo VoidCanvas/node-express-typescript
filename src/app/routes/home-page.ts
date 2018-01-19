@@ -7,7 +7,8 @@ import {
 export class HomePage extends Base {
   controller: Controllers.HomePage;
   constructor(path:string) {
-    super(path, new Controllers.HomePage());
+    const controller = new Controllers.HomePage(); // initializing the particular controller
+    super(path, controller);
     this.METHOD_MAPPING = [
       {
         path: '/',
