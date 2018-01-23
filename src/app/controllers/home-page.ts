@@ -11,10 +11,11 @@ import { Stats } from 'fs';
 export class HomePage implements Base {
 
   @httpGet('/something')
-  async sampleHome(req: express.Request, res: express.Response): Promise<Response> {
+  async sampleHome(str:number): Promise<Response> {
 
     const resStatus = new Status(true);
     const simpleResponse = new Response(resStatus);
+    simpleResponse.result = str;
     
     return simpleResponse;
   }

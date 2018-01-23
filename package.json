@@ -8,7 +8,7 @@
     "tslint": "tslint -c tslint.json -p tsconfig.json -s node_modules/custom-tslint-formatters/formatters  -t grouped",
     "start": "echo \"Error: run 'npm run build' and 'npm run serve'\" && exit 1",
     "serve": "nodemon -V dist/server.js",
-    "serve:prod": "environment=production node dist/server.js",    
+    "serve:prod": "environment=production node dist/server.js",
     "build": "tsc -w",
     "build:prod": "tsc"
   },
@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "body-parser": "^1.18.2",
-    "express": "^4.16.2"
+    "express": "^4.16.2",
+    "reflect-metadata": "^0.1.12"
   }
 }
