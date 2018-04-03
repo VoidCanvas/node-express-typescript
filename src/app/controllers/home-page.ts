@@ -1,6 +1,7 @@
 import * as express from 'express';
 import { route, httpGet, httpPost } from '../decorators/route';
 import { Base } from './index';
+import { Employee } from '../models';
 import {
   Response,
   Status,
@@ -15,8 +16,8 @@ export class HomePage implements Base {
 
     const resStatus = new Status(true);
     const simpleResponse = new Response(resStatus);
-    simpleResponse.result = str;
-    
+    const emp = await Employee.findById(1);
+    simpleResponse.result = emp;
     return simpleResponse;
   }
 
