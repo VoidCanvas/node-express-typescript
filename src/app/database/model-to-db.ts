@@ -5,8 +5,9 @@
 
 import 'reflect-metadata';
 import { createConnection } from 'typeorm';
-import ENV from '../environment';
-import { Employee } from './models/';
+import ENV from '../../environment';
+import { Employee } from '../models/';
+import config from './config';
 
 const entities = [
   Employee,
@@ -14,12 +15,8 @@ const entities = [
 export function setupEntities() {
   return createConnection({
     entities,
-    type: 'postgres',
-    host: 'localhost',
-    port: 5432,
-    username: 'postgres',
-    password: 'postgre',
-    database: 'voidcanvas',
+    type: 'postgres', // using postgres now 
+    ...config,
     synchronize:  ENV.isDev ? true : false,
     logging: false,
   });

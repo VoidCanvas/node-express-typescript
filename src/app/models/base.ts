@@ -2,6 +2,10 @@ import {
   IBase,
 } from '../interfaces/models';
 import { PrimaryGeneratedColumn, getConnection, getRepository } from '../decorators/model';
+import { Validation } from '../models';
+import { execute } from '../database/client';
+import { validate } from '../decorators/validator';
+
 
 export class Base implements IBase{
   
@@ -18,9 +22,21 @@ export class Base implements IBase{
     return result;
   }
 
-  decorateMe(obj:any) {
+  async save():Promise<Base> {
+    const result = await getRepository(this.constructor)
+    .save(this);
+    return result;
+  }
+
+  constructor(obj?:Object) {
     // use this function to initialize the model from a given object.
     // 
   }
 
+  // override this to validate
+  async validate():Promise<Validation> {
+    return validate(this);
+  }
+
 } 
+

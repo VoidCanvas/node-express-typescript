@@ -1,7 +1,8 @@
 import * as express from 'express';
-import { Response, Base } from '../models';
+import { Response, Base, Status } from '../models';
 import * as IControllers from '../interfaces/controllers';
 import 'reflect-metadata';
+import { stat } from 'fs';
 
 let app:express.Application = null;
 const ROUTE_METHOD_PATH_MAPPING:any = [];
@@ -9,23 +10,26 @@ const ROUTE_PATH_MAPPING = new Map();
 const BASE_ROUTE = '/api';
 
 function basicRequestHandler(routeHandler:any, modelMaping: any[], req:express.Request, res:express.Response): void {
-  const argsArr = modelMaping.map((mmap) => {
-    const obj = req.body[mmap.paramName] || req.query[mmap.paramName] || req.params[mmap.paramName];
-    if (!obj) {
-      return undefined;
-    }
-    let model = new mmap.modelSchema();
-    if (model instanceof Base) {
-      model = model.decorateMe(obj);
-    } else {
-      model = new mmap.modelSchema(obj);
-    }
-    return model;
-  });
-  routeHandler(...argsArr)
-  .then((response: Response) => {
-    res.json(response);
-  });
+  try {
+    const argsArr = modelMaping.map((mmap) => {
+      const obj = req.body[mmap.paramName] || req.query[mmap.paramName] || req.params[mmap.paramName];
+      if (!obj) {
+        if (mmap.isRequired === true) {
+          throw new Error(`${mmap.paramName} is required`);
+        }
+        return undefined;
+      }
+      return new mmap.modelSchema(obj);
+    });
+    routeHandler(...argsArr)
+    .then((response: Response) => {
+      res.json(response);
+    });
+  } catch (e) {
+    const status = new Status(false);
+    status.error = e;
+    const response = new Response(status);
+  }
 }
 
 function setupRoutes() {
@@ -53,13 +57,14 @@ function setupRoutes() {
     }
   }
 }
-function getModelMapFromTarget(target:Function, propertyKey:string, method:Function) {
+function getModelMapFromTarget(target:Function, propertyKey:string, method:Function): any {
   const paramTypes = Reflect.getMetadata('design:paramtypes', target, propertyKey);
   const paramNames = getParamNames(method);
   return paramNames.map((val, index) => {
     return {
       paramName: val,
       modelSchema: paramTypes[index],
+      isRequired: false, // TODO: find a way to control this
     };
   });
 
@@ -122,7 +127,8 @@ export function httpPost(_path ?: string): any {
       console.log(`Error in parsing httpPost() method ${propertyKey} in ${target.name}`);
       throw e;
     }
-    const path = _path || `/${propertyKey}`;
+    let path = _path || `/${propertyKey}`;
+    path = path === '/' ? '' : path;
     recordRoute(path, descriptor.value, target, 'post', modelMapping);
   };
 }

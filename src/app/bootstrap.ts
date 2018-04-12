@@ -1,5 +1,5 @@
 import { Application } from 'express';
-import * as modelToDb from './model-to-db';
+import * as modelToDb from './database/model-to-db';
 import { setupApp } from './decorators/route';
 import './controllers'; // importing so that the decorators can be called
 
