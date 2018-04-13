@@ -1,7 +1,7 @@
 export default {
   host: 'localhost',
   port: 5432,
-  username: 'postgres',
+  username: 'root',
   password: 'postgre',
   database: 'voidcanvas',
 };

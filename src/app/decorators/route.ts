@@ -132,5 +132,30 @@ export function httpPost(_path ?: string): any {
     recordRoute(path, descriptor.value, target, 'post', modelMapping);
   };
 }
-
-
+export function httpPut(_path ?: string): any {
+  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
+    let modelMapping = null;
+    try {
+      modelMapping = getModelMapFromTarget(target, propertyKey, descriptor.value);  
+    } catch (e) {
+      console.log(`Error in parsing httpPut() method ${propertyKey} in ${target.name}`);
+      throw e;
+    }
+    let path = _path || `/${propertyKey}`;
+    path = path === '/' ? '' : path;
+    recordRoute(path, descriptor.value, target, 'put', modelMapping);
+  };
+}
+export function httpDelete(_path ?: string): any {
+  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
+    let modelMapping = null;
+    try {
+      modelMapping = getModelMapFromTarget(target, propertyKey, descriptor.value);  
+    } catch (e) {
+      console.log(`Error in parsing httpDelete() method ${propertyKey} in ${target.name}`);
+      throw e;
+    }
+    const path = _path || `/${propertyKey}`;
+    recordRoute(path, descriptor.value, target, 'delete', modelMapping);
+  };
+}

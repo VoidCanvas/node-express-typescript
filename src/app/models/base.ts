@@ -28,6 +28,16 @@ export class Base implements IBase{
     return result;
   }
 
+  async delete():Promise<boolean> {
+    try {
+      const result = await getRepository(this.constructor)
+    .delete(this);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   constructor(obj?:Object) {
     // use this function to initialize the model from a given object.
     // 
