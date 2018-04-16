@@ -3,7 +3,8 @@ import { Validation } from '../Index';
 
 export class Status implements IStatus{
   error?: Error|Validation;
-  message: string; 
+  message?: string;
+  code?: number; 
   isSuccessful: boolean;  
   constructor(isSuccessful?:boolean, error?: Error|Validation) {
     this.isSuccessful = isSuccessful;
