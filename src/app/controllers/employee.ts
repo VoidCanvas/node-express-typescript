@@ -6,9 +6,10 @@ import { uiResponseService } from '../services';
 @route('/employees')
 export class HomePage implements Base {
 
-  @httpPost('/')
-  async create(data: Employee): Promise<Response> {
-    const employee = data ? data : new Employee();
+  @httpPost('/', {
+    required: ['employee'],
+  })
+  async create(employee: Employee): Promise<Response> {
     const validation = await employee.validate();
     if (!validation.isValid) {
       return uiResponseService.create400Response(validation);

@@ -1,14 +1,25 @@
 import * as express from 'express';
-import { Response, Base, Status } from '../models';
+import { Base, Validation } from '../models';
+import { Status, Response } from '../models/response/index';
+
 import * as IControllers from '../interfaces/controllers';
 import 'reflect-metadata';
 import { stat } from 'fs';
+import { uiResponseService } from '../services';
+import { ValidationError } from 'class-validator';
 
 let app:express.Application = null;
 const ROUTE_METHOD_PATH_MAPPING:any = [];
 const ROUTE_PATH_MAPPING = new Map(); 
 const BASE_ROUTE = '/api';
 
+/**
+ * This is the general handler for each route. It calls the appropriate controller method with appropriate params
+ * @param routeHandler gets the controller method to handle a route
+ * @param modelMaping to parse the contract from the request
+ * @param req request object
+ * @param res response object
+ */
 function basicRequestHandler(routeHandler:any, modelMaping: any[], req:express.Request, res:express.Response): void {
   try {
     const argsArr = modelMaping.map((mmap) => {
@@ -19,19 +30,28 @@ function basicRequestHandler(routeHandler:any, modelMaping: any[], req:express.R
         }
         return undefined;
       }
-      return new mmap.modelSchema(obj);
+      const model = new mmap.modelSchema(obj);
+      // if (mmap.shouldValidate === true) {
+      //   const validation = await model.validate();
+      //   if (!validation.isValid) {
+      //     throw new Error(`Invalid instance ${mmap.paramName}`);
+      //   }
+      // }
+      return model;
     });
     routeHandler(...argsArr)
     .then((response: Response) => {
       res.json(response);
     });
   } catch (e) {
-    const status = new Status(false);
-    status.error = e;
-    const response = new Response(status);
+    const response = uiResponseService.create500Response(e);
+    res.json(response);
   }
 }
 
+/**
+ * One time call from while bootstrapping to setup the api routes
+ */
 function setupRoutes() {
   while (ROUTE_METHOD_PATH_MAPPING.length > 0) {
     const obj = ROUTE_METHOD_PATH_MAPPING.shift();
@@ -57,18 +77,38 @@ function setupRoutes() {
     }
   }
 }
-function getModelMapFromTarget(target:Function, propertyKey:string, method:Function): any {
+
+/**
+ * It fetches contract keys and their types
+ * @param target The controller class
+ * @param propertyKey Handler function name of the controller
+ * @param method Handler function of the controller
+ * @param options api options
+ */
+function getModelMapFromTarget(target:Function, propertyKey:string, method:Function, options?: {
+  required?: string[],
+  validate?: string[],
+}): any {
   const paramTypes = Reflect.getMetadata('design:paramtypes', target, propertyKey);
   const paramNames = getParamNames(method);
   return paramNames.map((val, index) => {
     return {
       paramName: val,
       modelSchema: paramTypes[index],
-      isRequired: false, // TODO: find a way to control this
+      isRequired: options.required && options.required.includes(val), // tslint:disable-line
+      shouldValidate: options.validate && options.validate.includes(val), // tslint:disable-line
     };
   });
-
 }
+
+/**
+ * Push the routes one after another when a decorator runs
+ * @param path api path
+ * @param routeHandler controller method
+ * @param controller controller class
+ * @param method http verb
+ * @param modelMapping model mapping to parse data while http calls
+ */
 function recordRoute(
   path: string, 
   routeHandler: () => any, 
@@ -85,6 +125,37 @@ function recordRoute(
   });
 }
 
+/**
+ * To get decorator response
+ * @param method http verb
+ * @param decorator decorator name
+ * @param _path api path
+ * @param options api options
+ */
+function httpDecoratorResponse(method: string, decorator: string, _path?: string, options: {
+  required?: string[],
+  validate?: string[],
+}= {
+  required:[],
+  validate: [],
+}) {
+  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
+    let modelMapping = null;
+    try {
+      modelMapping = getModelMapFromTarget(target, propertyKey, descriptor.value, options);  
+    } catch (e) {
+      console.log(`Error in parsing ${decorator}() method ${propertyKey} in ${target.name}`);
+      throw e;
+    }
+    const path = _path || `/${propertyKey}`;
+    recordRoute(path, descriptor.value, target, method, modelMapping);
+  };
+}
+
+/**
+ * Fetching param names with regX
+ * Probably not a great idea, but couldn't find a better one
+ */
 const STRIP_COMMENTS = /(\/\/.*$)|(\/\*[\s\S]*?\*\/)|(\s*=[^,\)]*(('(?:\\'|[^'\r\n])*')|("(?:\\"|[^"\r\n])*"))|(\s*=[^,\)]*))/mg;
 const ARGUMENT_NAMES = /([^\s,]+)/g;
 function getParamNames(func:Function) {
@@ -94,68 +165,55 @@ function getParamNames(func:Function) {
     result = [];
   return result;
 }
+
+/**
+ * This function is used from bootstrap to scaffold routes
+ * @param appInstance Application instance
+ */
 export function setupApp(appInstance: express.Application) {
   app = appInstance;
   setupRoutes();
 }
 
+/**
+ * Using this decorator you can mark a controller as a router
+ * @param path router path
+ */
 export function route(path: string): any {
   return (target: any) => {
     ROUTE_PATH_MAPPING.set(target, path);
   };
 }
 
-export function httpGet(_path ?: string): any {
-  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-    let modelMapping = null;
-    try {
-      modelMapping = getModelMapFromTarget(target, propertyKey, descriptor.value);  
-    } catch (e) {
-      console.log(`Error in parsing httpGet() method ${propertyKey} in ${target.name}`);
-      throw e;
-    }
-    const path = _path || `/${propertyKey}`;
-    recordRoute(path, descriptor.value, target, 'get', modelMapping);
-  };
+export function httpGet(
+  _path ?: string, 
+  options?: {
+    required?: string[],
+    validate?: string[],
+  }): any {
+  return httpDecoratorResponse('get', 'httpGet', _path, options);
 }
-export function httpPost(_path ?: string): any {
-  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-    let modelMapping = null;
-    try {
-      modelMapping = getModelMapFromTarget(target, propertyKey, descriptor.value);  
-    } catch (e) {
-      console.log(`Error in parsing httpPost() method ${propertyKey} in ${target.name}`);
-      throw e;
-    }
-    let path = _path || `/${propertyKey}`;
-    path = path === '/' ? '' : path;
-    recordRoute(path, descriptor.value, target, 'post', modelMapping);
-  };
+export function httpPost(
+  _path ?: string, 
+  options?: {
+    required?: string[],
+    validate?: string[],
+  }): any {
+  return httpDecoratorResponse('post', 'httpPost', _path, options);
 }
-export function httpPut(_path ?: string): any {
-  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-    let modelMapping = null;
-    try {
-      modelMapping = getModelMapFromTarget(target, propertyKey, descriptor.value);  
-    } catch (e) {
-      console.log(`Error in parsing httpPut() method ${propertyKey} in ${target.name}`);
-      throw e;
-    }
-    let path = _path || `/${propertyKey}`;
-    path = path === '/' ? '' : path;
-    recordRoute(path, descriptor.value, target, 'put', modelMapping);
-  };
+export function httpPut(
+  _path ?: string, 
+  options?: {
+    required?: string[],
+    validate?: string[],
+  }): any {
+  return httpDecoratorResponse('put', 'httpPut', _path, options);
 }
-export function httpDelete(_path ?: string): any {
-  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-    let modelMapping = null;
-    try {
-      modelMapping = getModelMapFromTarget(target, propertyKey, descriptor.value);  
-    } catch (e) {
-      console.log(`Error in parsing httpDelete() method ${propertyKey} in ${target.name}`);
-      throw e;
-    }
-    const path = _path || `/${propertyKey}`;
-    recordRoute(path, descriptor.value, target, 'delete', modelMapping);
-  };
+export function httpDelete(
+  _path ?: string, 
+  options?: {
+    required?: string[],
+    validate?: string[],
+  }): any {
+  return httpDecoratorResponse('delete', 'httpDelete', _path, options);
 }
