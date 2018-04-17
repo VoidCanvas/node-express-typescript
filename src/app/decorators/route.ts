@@ -22,31 +22,48 @@ const BASE_ROUTE = '/api';
  */
 function basicRequestHandler(routeHandler:any, modelMaping: any[], req:express.Request, res:express.Response): void {
   try {
-    const argsArr = modelMaping.map((mmap) => {
+    modelMaping.forEach((mmap) => {
       const obj = req.body[mmap.paramName] || req.query[mmap.paramName] || req.params[mmap.paramName];
-      if (!obj) {
-        if (mmap.isRequired === true) {
-          throw new Error(`${mmap.paramName} is required`);
-        }
-        return undefined;
+      if (obj) {
+        mmap.data = new mmap.modelSchema(obj);
       }
-      const model = new mmap.modelSchema(obj);
-      // if (mmap.shouldValidate === true) {
-      //   const validation = await model.validate();
-      //   if (!validation.isValid) {
-      //     throw new Error(`Invalid instance ${mmap.paramName}`);
-      //   }
-      // }
-      return model;
     });
-    routeHandler(...argsArr)
-    .then((response: Response) => {
-      res.json(response);
+    Promise.all(modelMaping.map(mmap => validateModel(mmap)))
+    .then((validatedModelMappings: any) => {
+      const errors = validatedModelMappings.filter((mmap:any) => {
+        return !mmap.isValid;
+      }).map((mmap:any) => mmap.error);
+      if (errors.length) {
+        const response = uiResponseService.create400Response(errors);
+        res.json(response);
+      } else {
+        routeHandler(...modelMaping.map(x => x.data))
+        .then((response: Response) => {
+          res.json(response);
+        });
+      }
     });
   } catch (e) {
     const response = uiResponseService.create500Response(e);
     res.json(response);
   }
+}
+
+async function validateModel(mmap:any) {
+  mmap.isValid = true;
+  mmap.error = {};
+  if (mmap.isRequired && (mmap.data === undefined || mmap.data === null)) {
+    mmap.error.message = `${mmap.paramName} is Required`;
+    mmap.isValid = false;
+  } else if (mmap.shouldValidate === true) {
+    const validation = await mmap.data.validate();
+    if (!validation.isValid) {
+      mmap.error.message = `${mmap.paramName} is not valid`;
+      mmap.error.errors = validation.errors;
+      mmap.isValid = false;      
+    }
+  }
+  return mmap;
 }
 
 /**
