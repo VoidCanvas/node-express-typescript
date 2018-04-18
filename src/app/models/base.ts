@@ -14,15 +14,33 @@ export class Base implements IBase{
   id: number;
   
   // to fetch record by id
-  static async findById(id:number):Promise<Base> {
-    const result = await getRepository(this)
+  static async findById<T>(id:number):Promise<T> {
+    const result = await getRepository<T>(this)
       .createQueryBuilder('base')
       .where('base.id = :id', { id })
       .getOne();
     return result;
   }
+  
+  // to fetch one record
+  static async findOne<T>(obj:any):Promise<T> {
+    const result = await getRepository<T>(this)
+    .findOne(obj);
+    return result;
+  }  
+  
+  // to fetch records
+  static async find<T>(obj:any):Promise<T[]> {
+    const result = await getRepository<T>(this)
+    .find(obj);
+    return result;
+  }
 
   async save():Promise<Base> {
+    const validate1 = await this.validate();
+    if (!validate1.isValid) {
+      throw new Error('Instance not valid');
+    }
     const result = await getRepository(this.constructor)
     .save(this);
     return result;

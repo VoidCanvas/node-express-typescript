@@ -25,7 +25,7 @@ function basicRequestHandler(routeHandler:any, modelMaping: any[], req:express.R
     modelMaping.forEach((mmap) => {
       const obj = req.body[mmap.paramName] || req.query[mmap.paramName] || req.params[mmap.paramName];
       if (obj) {
-        mmap.data = new mmap.modelSchema(obj);
+        mmap.data = new mmap.modelSchema(obj).valueOf();
       }
     });
     Promise.all(modelMaping.map(mmap => validateModel(mmap)))
@@ -55,7 +55,7 @@ async function validateModel(mmap:any) {
   if (mmap.isRequired && (mmap.data === undefined || mmap.data === null)) {
     mmap.error.message = `${mmap.paramName} is Required`;
     mmap.isValid = false;
-  } else if (mmap.shouldValidate === true) {
+  } else if (mmap.shouldValidate === true && mmap.data.validate) {
     const validation = await mmap.data.validate();
     if (!validation.isValid) {
       mmap.error.message = `${mmap.paramName} is not valid`;

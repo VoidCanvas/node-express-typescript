@@ -38,7 +38,7 @@ export class HomePage implements Base {
 
   @httpGet('/:id')
   async findById(id: number): Promise<Response> {
-    const employee = await Employee.findById(id);
+    const employee = await Employee.findById<Employee>(id);
     if (!employee) {
       return uiResponseService.create404Response();
     }
@@ -48,7 +48,7 @@ export class HomePage implements Base {
 
   @httpDelete('/:id')
   async deleteById(id: number): Promise<Response> {
-    const employee = await Employee.findById(id);
+    const employee = await Employee.findById<Employee>(id);
     if (!employee) {
       return uiResponseService.create404Response();
     }

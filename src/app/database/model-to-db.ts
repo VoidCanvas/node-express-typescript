@@ -6,11 +6,15 @@
 import 'reflect-metadata';
 import { createConnection } from 'typeorm';
 import ENV from '../../environment';
-import { Employee } from '../models/';
 import config from './config';
+import { 
+  Employee,
+  User,
+} from '../models/';
 
 const entities = [
   Employee,
+  User,
 ];
 export function setupEntities() {
   return createConnection({
