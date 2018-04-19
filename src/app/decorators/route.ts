@@ -25,7 +25,10 @@ function basicRequestHandler(routeHandler:any, modelMaping: any[], req:express.R
     modelMaping.forEach((mmap) => {
       const obj = req.body[mmap.paramName] || req.query[mmap.paramName] || req.params[mmap.paramName];
       if (obj) {
-        mmap.data = new mmap.modelSchema(obj).valueOf();
+        mmap.data = new mmap.modelSchema(obj);
+        if (mmap.data.valueOf) {
+          mmap.data = mmap.data.valueOf();
+        }
       }
     });
     Promise.all(modelMaping.map(mmap => validateModel(mmap)))
@@ -44,6 +47,7 @@ function basicRequestHandler(routeHandler:any, modelMaping: any[], req:express.R
       }
     });
   } catch (e) {
+    console.log(e);
     const response = uiResponseService.create500Response(e);
     res.json(response);
   }

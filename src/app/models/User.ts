@@ -31,7 +31,7 @@ export class User extends Base {
     if (obj) {
       this.name = obj.name;
       this.email = obj.email;
-      this.password = bcrypt.hashSync(obj.password, SALT_ROUNDS);
+      this.password = obj.password && bcrypt.hashSync(obj.password, SALT_ROUNDS);
     }
   }
 
@@ -40,7 +40,7 @@ export class User extends Base {
     if (!validate.isValid) {
       return validate;
     }
-    const user = await User.findOne({
+    const user = await User.findOne<User>({
       email: this.email,
     });
     if (user) {
@@ -50,6 +50,7 @@ export class User extends Base {
         duplicate: 'This user already exists',
       };
       validate.errors = [error];
+      validate.isValid = false;
     }
     return validate;
   }
