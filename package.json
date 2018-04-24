@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "tslint": "tslint -c tslint.json -p tsconfig.json -s node_modules/custom-tslint-formatters/formatters  -t grouped",
-    "start": "echo \"Error: run 'npm run build' and 'npm run serve'\" && exit 1",
+    "start": "concurrently \"npm run build\" \"npm run serve\"",
+    "client": "cpx \"src/public/*.*\" \"dist/public\" --watch",
     "serve": "nodemon -V dist/server.js",
     "serve:prod": "environment=production node dist/server.js",
     "build": "tsc -w",
@@ -20,6 +21,8 @@
   "devDependencies": {
     "@types/express": "^4.11.0",
     "@types/node": "^8.5.2",
+    "concurrently": "^3.5.1",
+    "cpx": "^1.5.0",
     "custom-tslint-formatters": "^2.1.1",
     "nodemon": "^1.14.3",
     "pre-commit": "^1.2.2",
@@ -31,7 +34,11 @@
     "bcrypt": "^2.0.0",
     "body-parser": "^1.18.2",
     "class-validator": "^0.8.5",
+    "connect-redis": "^3.3.3",
     "express": "^4.16.2",
+    "express-session": "^1.15.6",
+    "passport": "^0.4.0",
+    "passport-local": "^1.0.0",
     "pg": "^7.4.1",
     "reflect-metadata": "^0.1.12",
     "typeorm": "^0.1.20"

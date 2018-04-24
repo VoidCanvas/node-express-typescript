@@ -34,6 +34,14 @@ class UIResponseService extends BaseService {
       error: validation,
     });
   }
+  create401Response(validation?: Validation) {
+    return this.createResponse({
+      status: false,
+      code: 401,
+      message: 'Authentication required',
+      error: validation,
+    });
+  }
 
   create500Response(validation?: Validation) {
     return this.createResponse({

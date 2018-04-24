@@ -1,12 +1,14 @@
 import * as express from 'express';
 import { Base, Validation } from '../models';
 import { Status, Response } from '../models/response/index';
-
 import * as IControllers from '../interfaces/controllers';
 import 'reflect-metadata';
 import { stat } from 'fs';
+const pasport = require('passport');
+
 import { uiResponseService } from '../services';
 import { ValidationError } from 'class-validator';
+import { SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION } from 'constants';
 
 let app:express.Application = null;
 const ROUTE_METHOD_PATH_MAPPING:any = [];
@@ -40,7 +42,7 @@ function basicRequestHandler(routeHandler:any, modelMaping: any[], req:express.R
         const response = uiResponseService.create400Response(errors);
         res.json(response);
       } else {
-        routeHandler(...modelMaping.map(x => x.data))
+        routeHandler(...modelMaping.map(x => x.data), req)
         .then((response: Response) => {
           res.json(response);
         });
@@ -81,22 +83,33 @@ function setupRoutes() {
     path = `${BASE_ROUTE}${path}${obj.path}`;
     switch (obj.method){
       case 'post':
-        app.post(path, basicRequestHandler.bind(null, obj.routeHandler, obj.modelMapping));
+        app.post(path, middleWares.bind(null, obj), basicRequestHandler.bind(null, obj.routeHandler, obj.modelMapping));
         break;
       case 'put':
-        app.put(path, basicRequestHandler.bind(null, obj.routeHandler, obj.modelMapping));
+        app.put(path, middleWares.bind(null, obj), basicRequestHandler.bind(null, obj.routeHandler, obj.modelMapping));
         break;
       case 'delete':
-        app.delete(path, basicRequestHandler.bind(null, obj.routeHandler, obj.modelMapping));
+        app.delete(path, middleWares.bind(null, obj), basicRequestHandler.bind(null, obj.routeHandler, obj.modelMapping));
         break;
       case 'patch':
-        app.patch(path, basicRequestHandler.bind(null, obj.routeHandler, obj.modelMapping));
+        app.patch(path, middleWares.bind(null, obj), basicRequestHandler.bind(null, obj.routeHandler, obj.modelMapping));
         break;
       default:
-        app.get(path, basicRequestHandler.bind(null, obj.routeHandler, obj.modelMapping));
+        app.get(path, middleWares.bind(null, obj), basicRequestHandler.bind(null, obj.routeHandler, obj.modelMapping));
         break;
     }
   }
+}
+
+function middleWares(routeData: any, req:express.Request, res:express.Response, next: express.NextFunction) {
+  if (!routeData.options.allowed || !routeData.options.allowed.length) {
+    return next();
+  }
+  if (req.isAuthenticated()) { // tslint:disable-line
+
+    return next();
+  }
+  res.json(uiResponseService.create401Response());
 }
 
 /**
@@ -118,6 +131,7 @@ function getModelMapFromTarget(target:Function, propertyKey:string, method:Funct
       modelSchema: paramTypes[index],
       isRequired: options.required && options.required.includes(val), // tslint:disable-line
       shouldValidate: options.validate && options.validate.includes(val), // tslint:disable-line
+
     };
   });
 }
@@ -136,6 +150,7 @@ function recordRoute(
   controller: IControllers.IBase, 
   method: string,
   modelMapping: object[],
+  options: Object,
 ) {
   ROUTE_METHOD_PATH_MAPPING.push({
     method,
@@ -143,6 +158,7 @@ function recordRoute(
     controller,
     path,
     modelMapping,
+    options,
   });
 }
 
@@ -156,6 +172,7 @@ function recordRoute(
 function httpDecoratorResponse(method: string, decorator: string, _path?: string, options: {
   required?: string[],
   validate?: string[],
+  allowed?: string[],  
 }= {
   required:[],
   validate: [],
@@ -169,7 +186,10 @@ function httpDecoratorResponse(method: string, decorator: string, _path?: string
       throw e;
     }
     const path = _path || `/${propertyKey}`;
-    recordRoute(path, descriptor.value, target, method, modelMapping);
+    if (options.allowed && options.allowed.length === 0) {
+      options.allowed = ['user'];
+    }
+    recordRoute(path, descriptor.value, target, method, modelMapping, options);
   };
 }
 
@@ -211,6 +231,7 @@ export function httpGet(
   options?: {
     required?: string[],
     validate?: string[],
+    allowed: string[],
   }): any {
   return httpDecoratorResponse('get', 'httpGet', _path, options);
 }
@@ -219,6 +240,7 @@ export function httpPost(
   options?: {
     required?: string[],
     validate?: string[],
+    isLoginRoute?: boolean,
   }): any {
   return httpDecoratorResponse('post', 'httpPost', _path, options);
 }

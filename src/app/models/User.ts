@@ -67,6 +67,6 @@ export class User extends Base {
     }
     const isPasswordMatched = await bcrypt.compare(obj.password, user.password);
     return isPasswordMatched ? user : null;
-    
+
   }
 }

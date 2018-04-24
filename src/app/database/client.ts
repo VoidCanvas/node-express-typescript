@@ -3,11 +3,11 @@
  * 
  */
 const { Pool, Client } = require('pg');
-import config from './config';
+import config from '../../config';
 
 function getPool(): any {
   const pool = new Pool({
-    ...config,
+    ...config.database,
   });
   return pool;
 }

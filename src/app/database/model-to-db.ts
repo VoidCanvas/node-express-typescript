@@ -6,7 +6,7 @@
 import 'reflect-metadata';
 import { createConnection } from 'typeorm';
 import ENV from '../../environment';
-import config from './config';
+import config from '../../config';
 import { 
   Employee,
   User,
@@ -20,7 +20,7 @@ export function setupEntities() {
   return createConnection({
     entities,
     type: 'postgres', // using postgres now 
-    ...config,
+    ...config.database,
     synchronize:  ENV.isDev ? true : false,
     logging: false,
   });

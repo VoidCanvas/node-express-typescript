@@ -36,7 +36,9 @@ export class HomePage implements Base {
     } 
   }
 
-  @httpGet('/:id')
+  @httpGet('/:id', {
+    allowed: [],
+  })
   async findById(id: number): Promise<Response> {
     const employee = await Employee.findById<Employee>(id);
     if (!employee) {
